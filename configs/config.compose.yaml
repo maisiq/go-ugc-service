@@ -1,0 +1,37 @@
+
+app:
+  debug: false
+  shutdown_time: 5
+  version: v0.1.0
+
+server:
+  host: 0.0.0.0
+  port: 50051
+
+kafka:
+  brokers: ["kafka0:9094"]
+  analytics_topic: analytics
+
+consumer:
+  groupid: ugc-etl-consumer
+
+db:
+  dsn: mongodb://mongors0:27017/?directConnection=true&serverSelectionTimeoutMS=2000
+  dbname: movies
+  collections:
+    movies: movies
+    users: users
+
+cache:
+  addr: cache:6379
+
+clickhouse:
+  dsn: clickhouse:9000
+  dbname: movies
+  username: ""
+  password: ""
+
+swagger:
+  host: 0.0.0.0
+  port: 8080
+  endpoint: swagger

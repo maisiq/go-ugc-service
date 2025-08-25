@@ -1,0 +1,28 @@
+name: go_ugc_service_tests
+
+services:
+  tests:
+    build:
+      dockerfile: tests.Dockerfile
+      context: .
+    container_name: go_ugc_service_api_tests
+    tty: true
+    environment:
+      - ENVIRONMENT=compose
+      - DB_DSN=mongodb://test_db:27017/?directConnection=true&serverSelectionTimeoutMS=5000
+    depends_on:
+      test_db:
+        condition: service_healthy
+
+  test_db:
+    image: mongo:8.0.1@sha256:9342a9279a9841fc5f8192e49dcaaf9404e6bb3a90e8cf134eb96074830dd448
+    container_name: go_ugc_service_mongo_test_db
+    command: /app/init.sh
+    volumes: 
+      - ./infra/mongo/init.sh:/app/init.sh
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok"]
+      interval: 15s
+      timeout: 30s
+      retries: 5
+      start_period: 15s

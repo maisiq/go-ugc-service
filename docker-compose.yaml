@@ -1,0 +1,71 @@
+name: go_ugc_service
+
+
+x-kafka: &common
+  image: bitnami/kafka:latest
+  healthcheck:
+    test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9094"]
+    interval: 15s
+    start_period: 30s
+    retries: 5
+  ports:
+    - 9094:9094/tcp
+
+services:
+  api:
+    build: .
+    container_name: go_ugc_service_api
+    command: ["/app/api"]
+    environment:
+      - ENVIRONMENT=compose
+    env_file:
+      - .env
+    ports:
+      - 50051:50051
+      - 8080:8080
+
+  mongors0:
+    image: mongo:8.0.1@sha256:9342a9279a9841fc5f8192e49dcaaf9404e6bb3a90e8cf134eb96074830dd448
+    container_name: go_ugc_service_mongo_db
+    ports:
+      - 27017:27017/tcp
+    command: /app/init.sh
+    volumes: 
+      - ./infra/mongo/init.sh:/app/init.sh
+  kafka0:
+    <<: *common
+    container_name: go_ugc_service_kafka0
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://0.0.0.0:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka0:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka0:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CREATE_TOPICS=analytics:3:2
+  cache:
+    container_name: go_ugc_service_redis
+    image: redis
+    ports:
+      - 6379:6379
+  clickhouse:
+    container_name: go_ugc_service_clickhouse
+    image: clickhouse:25.5.1
+    env_file:
+      - ./infra/clickhouse/.env
+    ports:
+      - 18123:8123
+      - 9000:9000
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - ./infra/clickhouse/init:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--host=localhost", "--query=SELECT 1"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s

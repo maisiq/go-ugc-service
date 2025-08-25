@@ -1,0 +1,4 @@
+vendor.protogen/
+bin/
+.env
+!.env.example

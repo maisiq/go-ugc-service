@@ -1,0 +1,11 @@
+version: v1beta1
+name: github.com/maisiq/go-ugc-service
+
+lint:
+  use: 
+    - DEFAULTS
+
+build:
+  roots:
+    - api
+    - vendor.protogen

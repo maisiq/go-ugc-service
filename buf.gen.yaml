@@ -1,0 +1,31 @@
+version: v1
+
+plugins:
+  - name: go
+    out: pkg/pb/ugcservice
+    opt:
+      - module=github.com/maisiq/go-ugc-service
+  - name: go-grpc
+    out: pkg/pb/ugcservice
+    opt: 
+      - module=github.com/maisiq/go-ugc-service
+  - name: grpc-gateway
+    out: pkg/pb/ugcservice
+    opt:
+      - generate_unbound_methods=true
+      - logtostderr=true
+      - module=github.com/maisiq/go-ugc-service
+  - name: openapiv2
+    path: protoc-gen-openapiv2
+    out: swagger
+    strategy: directory
+    opt: 
+      - generate_unbound_methods=true
+  - name: validate
+    out: pkg/pb/ugcservice
+    opt:
+      - module=github.com/maisiq/go-ugc-service
+      - lang=go
+
+    
+  

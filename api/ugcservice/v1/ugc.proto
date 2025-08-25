@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package github.com.maisiq.go_ugc_service.v1;
+
+import "validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+
+option go_package = "github.com/maisiq/go-ugc-service/v1;ugcservicev1";
+
+service UGCService {
+    rpc GetReviews (GetReviewsRequest) returns (GetReviewsResponse);
+    rpc CreateReview (CreateReviewRequest) returns (google.protobuf.Empty);
+    rpc UpdateReview (UpdateReviewRequest) returns (google.protobuf.Empty);
+}
+
+message Review {
+    string user_id = 1 [(validate.rules).string.uuid = true];
+    string movie_id = 2 [(validate.rules).string.uuid = true];
+    string text = 3;
+}
+
+message GetReviewsRequest {
+    oneof for {
+        string movie_id = 1 [(validate.rules).string.uuid = true];
+        string user_id = 2 [(validate.rules).string.uuid = true];
+    }
+    int32 page_size = 3;
+    string page_token = 4;
+}
+
+message GetReviewsResponse {
+    repeated Review reviews = 1;
+    string next_page_token = 2;
+}
+
+message CreateReviewRequest {
+    Review review = 1;
+}
+
+message UpdateReviewRequest {
+    Review review = 1;
+}
