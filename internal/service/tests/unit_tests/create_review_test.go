@@ -2,6 +2,7 @@ package unit_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	repoMocks "github.com/maisiq/go-ugc-service/internal/repository/mocks"
 	"github.com/maisiq/go-ugc-service/internal/service"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestCreateReview(t *testing.T) {
@@ -22,23 +24,20 @@ func TestCreateReview(t *testing.T) {
 		movieID    = gofakeit.UUID()
 		reviewText = gofakeit.Comment()
 		ctx        = context.Background()
-		// review     = repository.Review{UserID: userID, MovieID: movieID, Text: reviewText}
-		_ = []producer.AnalyticsMessage{
+		logger, _  = zap.NewDevelopment()
+		_          = []producer.AnalyticsMessage{
 			{UserID: userID, MovieID: movieID, TimestampMS: time.Now().Unix()},
 		}
 	)
 
 	t.Run("Create review returns no error", func(t *testing.T) {
 		t.Parallel()
-		// repoMocked := repoMocks.NewReviewRepositoryMock(t)
 		uowMocked := repoMocks.NewUOWMock(t)
 		producerMocked := prodMocks.NewProducerMock(t)
 		s := service.NewUGCService(nil, nil, nil, producerMocked, nil, uowMocked)
 		done := make(chan struct{})
 
-		// repoMocked.CreateReviewMock.Expect(minimock.AnyContext, review).Return(nil)
 		uowMocked.RunWithinTxMock.Return(nil)
-		// repoMocked.CreateReviewMock.Times(2)
 		producerMocked.WriteMessagesMock.Set(func(ctx context.Context, cancel context.CancelFunc, messages []producer.AnalyticsMessage) {
 			close(done)
 		})
@@ -47,34 +46,40 @@ func TestCreateReview(t *testing.T) {
 		require.NoError(t, err)
 
 		<-done
-
 	})
 
 	t.Run("Create review returns ErrAlreadyExists", func(t *testing.T) {
 		t.Parallel()
-		// repoMocked := repoMocks.NewReviewRepositoryMock(t)
 		uowMocked := repoMocks.NewUOWMock(t)
 		producerMocked := prodMocks.NewProducerMock(t)
 		s := service.NewUGCService(nil, nil, nil, producerMocked, nil, uowMocked)
 
-		// repoMocked.CreateReviewMock.Expect(minimock.AnyContext, review).Return(repository.ErrAlreadyExists)
 		uowMocked.RunWithinTxMock.Return(repository.ErrAlreadyExists)
 
 		err := s.CreateReview(ctx, userID, movieID, reviewText)
 		require.ErrorIs(t, err, apperrors.ErrAlreadyExists)
+	})
+
+	t.Run("Create review returns internal error", func(t *testing.T) {
+		t.Parallel()
+		uowMocked := repoMocks.NewUOWMock(t)
+		producerMocked := prodMocks.NewProducerMock(t)
+		s := service.NewUGCService(nil, nil, logger.Sugar(), producerMocked, nil, uowMocked)
+
+		uowMocked.RunWithinTxMock.Return(fmt.Errorf("arbitrary error"))
+
+		err := s.CreateReview(ctx, userID, movieID, reviewText)
+		require.ErrorIs(t, err, apperrors.ErrInternal)
 
 	})
 
 	t.Run("Create review method writes message to the broker", func(t *testing.T) {
 		t.Parallel()
-		// repoMocked := repoMocks.NewReviewRepositoryMock(t)
 		uowMocked := repoMocks.NewUOWMock(t)
 		producerMocked := prodMocks.NewProducerMock(t)
 		s := service.NewUGCService(nil, nil, nil, producerMocked, nil, uowMocked)
 		done := make(chan struct{})
 
-		// repoMocked.CreateReviewMock.Expect(minimock.AnyContext, review).Return(nil)
-		// repoMocked.CreateReviewMock.Times(2)
 		uowMocked.RunWithinTxMock.Return(nil)
 		producerMocked.WriteMessagesMock.Set(func(ctx context.Context, cancel context.CancelFunc, msgs []producer.AnalyticsMessage) {
 			defer close(done)
@@ -99,7 +104,6 @@ func TestCreateReview(t *testing.T) {
 		require.NoError(t, err)
 
 		<-done
-
 	})
 
 }

@@ -53,7 +53,6 @@ func TestGetReview(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, reviewsExp, review)
-
 	})
 
 	t.Run("Get user reviews returns review using cache", func(t *testing.T) {
@@ -74,7 +73,6 @@ func TestGetReview(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, reviewsExp, review)
-
 	})
 
 	t.Run("Get user reviews returns ErrNotFound", func(t *testing.T) {
@@ -92,6 +90,5 @@ func TestGetReview(t *testing.T) {
 
 		require.ErrorIs(t, err, apperrors.ErrNotFound)
 		require.Equal(t, []repository.Review{}, review)
-
 	})
 }
