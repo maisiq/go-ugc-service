@@ -2,6 +2,7 @@ package unit_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v7"
@@ -10,6 +11,7 @@ import (
 	repoMocks "github.com/maisiq/go-ugc-service/internal/repository/mocks"
 	"github.com/maisiq/go-ugc-service/internal/service"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestUpdateReview(t *testing.T) {
@@ -19,6 +21,7 @@ func TestUpdateReview(t *testing.T) {
 		movieID    = gofakeit.UUID()
 		reviewText = gofakeit.Comment()
 		ctx        = context.Background()
+		logger, _  = zap.NewDevelopment()
 	)
 	t.Run("Update review returns nil", func(t *testing.T) {
 		t.Parallel()
@@ -43,6 +46,17 @@ func TestUpdateReview(t *testing.T) {
 		err := s.UpdateReview(ctx, userID, movieID, reviewText)
 
 		require.ErrorIs(t, err, apperrors.ErrNotFound)
+	})
 
+	t.Run("Update review returns internal error", func(t *testing.T) {
+		t.Parallel()
+
+		uowMocked := repoMocks.NewUOWMock(t)
+		s := service.NewUGCService(nil, nil, logger.Sugar(), nil, nil, uowMocked)
+		uowMocked.RunWithinTxMock.Return(fmt.Errorf("arbitrary error"))
+
+		err := s.UpdateReview(ctx, userID, movieID, reviewText)
+
+		require.ErrorIs(t, err, apperrors.ErrInternal)
 	})
 }
